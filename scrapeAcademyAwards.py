@@ -10,6 +10,7 @@ browser = mechanize.Browser()
 years = []
 movies = []
 awardDates = []
+releaseDates = []
 
 awardDict = {}
 
@@ -37,7 +38,9 @@ for movie in soup.find_all('div', {'class': 'nomHangIndent'}):
 	movies.append(movie.find('a').contents[0])
 
 for i in xrange(0,len(years)):
-	awardDict[years[i]] = {'Movie': movies[i], 'AwardDate': awardDates[i]}
+	url = "http://www.omdbapi.com/?t=" + movies[i].replace(' ', '+') + '&y=&plot=short&r=json'
+	released = json.loads(requests.get(url).text)['Released']
+	awardDict[years[i]] = {'Movie': movies[i], 'AwardDate': awardDates[i], "ReleaseDate": released}
 	pass
 
 with open('AcademyAwards.json', 'w') as outfile:
