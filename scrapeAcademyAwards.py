@@ -1,19 +1,28 @@
 from bs4 import BeautifulSoup
-from urllib2 import urlopen
 import mechanize
 import json
+import requests
 
-BASE_URL = 'http://awardsdatabase.oscars.org/ampas_awards/BasicSearchInput.jsp'
+AADB_URL = 'http://awardsdatabase.oscars.org/ampas_awards/BasicSearchInput.jsp'
+AA_WIKI_URL = 'http://en.wikipedia.org/wiki/List_of_Academy_Awards_ceremonies'
 browser = mechanize.Browser()
 
 years = []
 movies = []
+awardDates = []
 
 awardDict = {}
 
-browser.open(BASE_URL)
+soup = BeautifulSoup(requests.get(AA_WIKI_URL).text)
+
+for row in soup('table')[1].findAll('tr')[3:]:
+	tds = row.findAll('td')
+	if(len(tds) > 1):
+		awardDates.append(tds[1].contents[0])
+
+browser.open(AADB_URL)
 browser.select_form(name='basicSearchInput')
-browser['BSFromYear'] = ['1']
+browser['BSFromYear'] = ['3']
 browser['BSToYear'] = ['86']
 browser['BSCategory'] = ['1081']
 browser.find_control('BSWinner').items[0].selected = True
@@ -28,7 +37,7 @@ for movie in soup.find_all('div', {'class': 'nomHangIndent'}):
 	movies.append(movie.find('a').contents[0])
 
 for i in xrange(0,len(years)):
-	awardDict[years[i]] = movies[i]
+	awardDict[years[i]] = {'Movie': movies[i], 'AwardDate': awardDates[i]}
 	pass
 
 with open('AcademyAwards.json', 'w') as outfile:
