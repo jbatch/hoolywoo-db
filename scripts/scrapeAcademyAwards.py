@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 import mechanize
 import json
 import requests
+from datetime import datetime
+import calendar
 
 AADB_URL = 'http://awardsdatabase.oscars.org/ampas_awards/BasicSearchInput.jsp'
 AA_WIKI_URL = 'http://en.wikipedia.org/wiki/List_of_Academy_Awards_ceremonies'
@@ -19,7 +21,7 @@ soup = BeautifulSoup(requests.get(AA_WIKI_URL).text)
 for row in soup('table')[1].findAll('tr')[3:]:
 	tds = row.findAll('td')
 	if(len(tds) > 1):
-		awardDates.append(tds[1].contents[0])
+		awardDates.append(calendar.timegm(datetime.strptime(tds[1].contents[0], "%B %d, %Y").timetuple()))
 
 browser.open(AADB_URL)
 browser.select_form(name='basicSearchInput')
@@ -40,10 +42,17 @@ for movie in soup.find_all('div', {'class': 'nomHangIndent'}):
 for i in xrange(0,len(years)):
 	url = "http://www.omdbapi.com/?t=" + movies[i].replace(' ', '+') + '&y=&plot=short&r=json'
 	released = json.loads(requests.get(url).text)['Released']
-	awardDict[years[i]] = {'Movie': movies[i], 'AwardDate': awardDates[i], "ReleaseDate": released}
+	if(released != 'N/A'):
+		released = calendar.timegm(datetime.strptime(released, "%d %b %Y").timetuple())
+		awardDict[years[i]] = {'Movie': movies[i], 'AwardDate': awardDates[i], "ReleaseDate": released}
 	pass
 
 with open('AcademyAwards.json', 'w') as outfile:
 	jsonData = json.dumps(awardDict, outfile, sort_keys=True, indent=4, ensure_ascii=False)
 	outfile.write(jsonData)
 	outfile.close()
+
+
+
+
+
